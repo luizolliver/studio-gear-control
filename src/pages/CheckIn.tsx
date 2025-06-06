@@ -60,25 +60,41 @@ export default function CheckIn() {
   };
 
   const handleConfirm = async () => {
-    if (!selectedEquipment || !action) return;
+    if (!selectedEquipment || !action || !usuario.trim()) return;
 
     try {
       const isCheckout = action === 'checkout';
       
-      // Atualizar status do equipamento
-      await updateEquipamento.mutateAsync({
+      // Preparar dados para atualização do equipamento
+      const updateData: any = {
         id: selectedEquipment.id,
-        status: isCheckout ? 'Em uso' : 'Disponível',
-        usuario_atual: isCheckout ? usuario : null,
-        localizacao: isCheckout ? usuario : 'Estoque'
-      });
+        status: isCheckout ? 'Em uso' : 'Disponível'
+      };
+
+      // Adicionar campos opcionais apenas se existirem na interface
+      if (isCheckout) {
+        updateData.localizacao = usuario;
+        // Só incluir usuario_atual se o campo existir
+        if ('usuario_atual' in selectedEquipment) {
+          updateData.usuario_atual = usuario;
+        }
+      } else {
+        updateData.localizacao = 'Estoque';
+        // Só incluir usuario_atual se o campo existir
+        if ('usuario_atual' in selectedEquipment) {
+          updateData.usuario_atual = null;
+        }
+      }
+
+      // Atualizar status do equipamento
+      await updateEquipamento.mutateAsync(updateData);
 
       // Criar movimentação
       await createMovimentacao.mutateAsync({
         equipamento_id: selectedEquipment.id,
         tipo: isCheckout ? 'Retirada' : 'Devolução',
         por: usuario,
-        observacoes: observacoes
+        observacoes: observacoes || undefined
       });
 
       toast({
@@ -94,6 +110,7 @@ export default function CheckIn() {
       setSearchCode("");
 
     } catch (error) {
+      console.error('Erro ao processar operação:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao processar a operação.",
@@ -239,7 +256,7 @@ export default function CheckIn() {
                       <Button 
                         className="flex-1" 
                         onClick={handleConfirm}
-                        disabled={!usuario.trim()}
+                        disabled={!usuario.trim() || updateEquipamento.isPending || createMovimentacao.isPending}
                       >
                         Confirmar {action === 'checkout' ? 'Retirada' : 'Devolução'}
                       </Button>
