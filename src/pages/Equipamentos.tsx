@@ -7,12 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, Edit, Trash2, Loader2 } from "lucide-react";
 import { useEquipamentos } from "@/hooks/useEquipamentos";
 import { useState } from "react";
+import { EquipamentoModal } from "@/components/EquipamentoModal";
+import { Equipamento } from "@/lib/supabase";
 
 export default function Equipamentos() {
   const { data: equipamentos, isLoading, error } = useEquipamentos();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEquipamento, setSelectedEquipamento] = useState<Equipamento | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -31,6 +35,21 @@ export default function Equipamentos() {
     
     return matchesSearch && matchesCategory && matchesStatus;
   }) || [];
+
+  const handleNewEquipamento = () => {
+    setSelectedEquipamento(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditEquipamento = (equipamento: Equipamento) => {
+    setSelectedEquipamento(equipamento);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEquipamento(null);
+  };
 
   if (error) {
     return (
@@ -54,7 +73,7 @@ export default function Equipamentos() {
             <h1 className="text-3xl font-bold">Equipamentos</h1>
             <p className="text-muted-foreground">Gerencie todos os equipamentos da produtora</p>
           </div>
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2" onClick={handleNewEquipamento}>
             <Plus className="h-4 w-4" />
             Novo Equipamento
           </Button>
@@ -88,6 +107,8 @@ export default function Equipamentos() {
                 <option value="lente">Lente</option>
                 <option value="microfone">Microfone</option>
                 <option value="suporte">Suporte</option>
+                <option value="iluminação">Iluminação</option>
+                <option value="acessório">Acessório</option>
               </select>
               <select 
                 className="px-3 py-2 border rounded-md"
@@ -147,7 +168,12 @@ export default function Equipamentos() {
                   </div>
                   
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditEquipamento(equipamento)}
+                    >
                       <Edit className="h-3 w-3 mr-1" />
                       Editar
                     </Button>
@@ -171,6 +197,13 @@ export default function Equipamentos() {
             </p>
           </div>
         )}
+
+        {/* Modal de Equipamento */}
+        <EquipamentoModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          equipamento={selectedEquipamento}
+        />
       </div>
     </Layout>
   );

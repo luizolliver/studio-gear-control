@@ -24,7 +24,7 @@ const Relatorios = () => {
       }, {});
 
     return Object.entries(contagemUsos)
-      .map(([nome, usos]) => ({ nome, usos }))
+      .map(([nome, usos]) => ({ nome, usos: Number(usos) }))
       .sort((a, b) => b.usos - a.usos)
       .slice(0, 5);
   }, [movimentacoes]);
