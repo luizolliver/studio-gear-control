@@ -1,13 +1,13 @@
-
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Package, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, Loader2, QrCode } from "lucide-react";
 import { useEquipamentos } from "@/hooks/useEquipamentos";
 import { useState } from "react";
 import { EquipamentoModal } from "@/components/EquipamentoModal";
+import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { Equipamento } from "@/lib/supabase";
 
 export default function Equipamentos() {
@@ -17,6 +17,7 @@ export default function Equipamentos() {
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEquipamento, setSelectedEquipamento] = useState<Equipamento | null>(null);
+  const [showQRCode, setShowQRCode] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -51,6 +52,10 @@ export default function Equipamentos() {
     setSelectedEquipamento(null);
   };
 
+  const handleShowQRCode = (codigo: string) => {
+    setShowQRCode(codigo);
+  };
+
   if (error) {
     return (
       <Layout>
@@ -78,6 +83,28 @@ export default function Equipamentos() {
             Novo Equipamento
           </Button>
         </div>
+
+        {/* QR Code Display */}
+        {showQRCode && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                QR Code do Equipamento
+                <Button variant="outline" size="sm" onClick={() => setShowQRCode(null)}>
+                  Fechar
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center">
+                <QRCodeGenerator 
+                  value={showQRCode} 
+                  title={`Equipamento: ${showQRCode}`}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filters */}
         <Card>
@@ -176,6 +203,13 @@ export default function Equipamentos() {
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Editar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleShowQRCode(equipamento.codigo)}
+                    >
+                      <QrCode className="h-3 w-3" />
                     </Button>
                     <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
                       <Trash2 className="h-3 w-3" />
