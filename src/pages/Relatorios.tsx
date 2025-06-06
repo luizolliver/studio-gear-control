@@ -31,25 +31,25 @@ const Relatorios = () => {
   const estatisticas = [
     {
       titulo: "Total de Equipamentos",
-      valor: equipamentos?.length.toString() || "0",
+      valor: (equipamentos?.length || 0).toString(),
       icone: Calendar,
       cor: "text-blue-600"
     },
     {
       titulo: "Em Uso Atualmente",
-      valor: equipamentos?.filter(eq => eq.status === 'Em uso').length.toString() || "0",
+      valor: (equipamentos?.filter(eq => eq.status === 'Em uso').length || 0).toString(),
       icone: TrendingUp,
       cor: "text-green-600"
     },
     {
       titulo: "Movimentações Totais",
-      valor: movimentacoes?.length.toString() || "0",
+      valor: (movimentacoes?.length || 0).toString(),
       icone: Clock,
       cor: "text-orange-600"
     },
     {
       titulo: "Em Manutenção",
-      valor: equipamentos?.filter(eq => eq.status === 'Manutenção').length.toString() || "0",
+      valor: (equipamentos?.filter(eq => eq.status === 'Manutenção').length || 0).toString(),
       icone: AlertTriangle,
       cor: "text-red-600"
     }
