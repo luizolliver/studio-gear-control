@@ -18,7 +18,7 @@ const Relatorios = () => {
       .filter(mov => mov.tipo === 'Retirada')
       .reduce((acc: Record<string, number>, mov) => {
         const nome = mov.equipamentos?.nome || 'Desconhecido';
-        const currentCount = acc[nome] ?? 0;
+        const currentCount: number = acc[nome] || 0;
         acc[nome] = currentCount + 1;
         return acc;
       }, {});
