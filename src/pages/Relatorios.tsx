@@ -16,11 +16,12 @@ const Relatorios = () => {
     
     const contagemUsos = movimentacoes
       .filter(mov => mov.tipo === 'Retirada')
-      .reduce((acc, mov) => {
+      .reduce((acc: Record<string, number>, mov) => {
         const nome = mov.equipamentos?.nome || 'Desconhecido';
-        acc[nome] = (acc[nome] || 0) + 1;
+        const currentCount = acc[nome] ?? 0;
+        acc[nome] = currentCount + 1;
         return acc;
-      }, {} as Record<string, number>);
+      }, {});
 
     return Object.entries(contagemUsos)
       .map(([nome, usos]) => ({ nome, usos }))
