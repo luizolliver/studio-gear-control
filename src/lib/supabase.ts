@@ -15,6 +15,7 @@ export interface Equipamento {
   categoria: string
   status: 'Disponível' | 'Em uso' | 'Manutenção'
   localizacao: string
+  usuario_atual?: string
   atualizado_em: string
 }
 
@@ -25,6 +26,10 @@ export interface HistoricoMovimentacao {
   por: string
   data: string
   observacoes?: string
+  equipamentos?: {
+    nome: string
+    codigo: string
+  }
 }
 
 export interface Usuario {

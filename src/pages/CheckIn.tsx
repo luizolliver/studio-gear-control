@@ -7,45 +7,99 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Search, ArrowRight, ArrowLeft, Clock, User } from "lucide-react";
 import { useState } from "react";
+import { useEquipamentos, useUpdateEquipamento } from "@/hooks/useEquipamentos";
+import { useMovimentacoes, useCreateMovimentacao } from "@/hooks/useMovimentacoes";
+import { QRCodeScanner } from "@/components/QRCodeScanner";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CheckIn() {
   const [searchCode, setSearchCode] = useState("");
   const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [action, setAction] = useState<"checkout" | "checkin" | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [usuario, setUsuario] = useState("");
+  const [observacoes, setObservacoes] = useState("");
 
-  // Mock data - substituir por dados reais do Supabase
-  const recentMovements = [
-    { id: 1, equipamento: "Câmera Sony FX6", codigo: "CAM001", tipo: "Retirada", usuario: "João Silva", data: "2024-01-15 14:30", observacoes: "Gravação externa" },
-    { id: 2, equipamento: "Tripé Manfrotto", codigo: "TRI001", tipo: "Devolução", usuario: "Maria Santos", data: "2024-01-15 12:15", observacoes: "" },
-    { id: 3, equipamento: "Microfone Rode", codigo: "MIC005", tipo: "Retirada", usuario: "Pedro Costa", data: "2024-01-15 10:45", observacoes: "Entrevista cliente" },
-  ];
+  const { data: equipamentos } = useEquipamentos();
+  const { data: movimentacoes } = useMovimentacoes();
+  const updateEquipamento = useUpdateEquipamento();
+  const createMovimentacao = useCreateMovimentacao();
+  const { toast } = useToast();
 
   const handleSearch = () => {
-    // Simular busca por código
-    if (searchCode === "CAM001") {
-      setSelectedEquipment({
-        id: 1,
-        nome: "Câmera Sony FX6",
-        codigo: "CAM001",
-        categoria: "Câmera",
-        status: "Disponível",
-        localizacao: "Estoque"
+    const equipamento = equipamentos?.find(eq => 
+      eq.codigo.toLowerCase() === searchCode.toLowerCase()
+    );
+    
+    if (equipamento) {
+      setSelectedEquipment(equipamento);
+    } else {
+      toast({
+        title: "Equipamento não encontrado",
+        description: `Nenhum equipamento com código "${searchCode}" foi encontrado.`,
+        variant: "destructive"
       });
-    } else if (searchCode === "CAM002") {
-      setSelectedEquipment({
-        id: 2,
-        nome: "Câmera Canon EOS R5",
-        codigo: "CAM002",
-        categoria: "Câmera",
-        status: "Em uso",
-        localizacao: "João Silva",
-        usuarioAtual: "João Silva"
-      });
+      setSelectedEquipment(null);
+    }
+  };
+
+  const handleQRScan = (result: string) => {
+    setSearchCode(result);
+    setShowScanner(false);
+    const equipamento = equipamentos?.find(eq => 
+      eq.codigo.toLowerCase() === result.toLowerCase()
+    );
+    
+    if (equipamento) {
+      setSelectedEquipment(equipamento);
     }
   };
 
   const handleAction = (actionType: "checkout" | "checkin") => {
     setAction(actionType);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedEquipment || !action) return;
+
+    try {
+      const isCheckout = action === 'checkout';
+      
+      // Atualizar status do equipamento
+      await updateEquipamento.mutateAsync({
+        id: selectedEquipment.id,
+        status: isCheckout ? 'Em uso' : 'Disponível',
+        usuario_atual: isCheckout ? usuario : null,
+        localizacao: isCheckout ? usuario : 'Estoque'
+      });
+
+      // Criar movimentação
+      await createMovimentacao.mutateAsync({
+        equipamento_id: selectedEquipment.id,
+        tipo: isCheckout ? 'Retirada' : 'Devolução',
+        por: usuario,
+        observacoes: observacoes
+      });
+
+      toast({
+        title: `${isCheckout ? 'Retirada' : 'Devolução'} realizada com sucesso!`,
+        description: `Equipamento ${selectedEquipment.nome} foi ${isCheckout ? 'retirado' : 'devolvido'}.`
+      });
+
+      // Reset form
+      setSelectedEquipment(null);
+      setAction(null);
+      setUsuario("");
+      setObservacoes("");
+      setSearchCode("");
+
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao processar a operação.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getActionColor = (tipo: string) => {
@@ -88,10 +142,18 @@ export default function CheckIn() {
                 <Button onClick={handleSearch}>
                   <Search className="h-4 w-4" />
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => setShowScanner(!showScanner)}>
                   <QrCode className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* QR Scanner */}
+              {showScanner && (
+                <QRCodeScanner 
+                  onScan={handleQRScan}
+                  onError={(error) => console.log('Scanner error:', error)}
+                />
+              )}
 
               {/* Equipment Found */}
               {selectedEquipment && (
@@ -117,10 +179,10 @@ export default function CheckIn() {
                       <span className="font-medium">{selectedEquipment.localizacao}</span>
                     </div>
 
-                    {selectedEquipment.usuarioAtual && (
+                    {selectedEquipment.usuario_atual && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">Em uso por: </span>
-                        <span className="font-medium">{selectedEquipment.usuarioAtual}</span>
+                        <span className="font-medium">{selectedEquipment.usuario_atual}</span>
                       </div>
                     )}
 
@@ -157,16 +219,28 @@ export default function CheckIn() {
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium">Usuário Responsável</label>
-                      <Input placeholder="Nome do usuário..." />
+                      <Input 
+                        placeholder="Nome do usuário..." 
+                        value={usuario}
+                        onChange={(e) => setUsuario(e.target.value)}
+                      />
                     </div>
                     
                     <div>
                       <label className="text-sm font-medium">Observações (opcional)</label>
-                      <Textarea placeholder="Detalhes sobre o uso..." />
+                      <Textarea 
+                        placeholder="Detalhes sobre o uso..." 
+                        value={observacoes}
+                        onChange={(e) => setObservacoes(e.target.value)}
+                      />
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button className="flex-1">
+                      <Button 
+                        className="flex-1" 
+                        onClick={handleConfirm}
+                        disabled={!usuario.trim()}
+                      >
                         Confirmar {action === 'checkout' ? 'Retirada' : 'Devolução'}
                       </Button>
                       <Button 
@@ -195,12 +269,12 @@ export default function CheckIn() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentMovements.map((movement) => (
+                {movimentacoes?.map((movement) => (
                   <div key={movement.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <div className="space-y-1">
-                        <p className="font-medium text-sm">{movement.equipamento}</p>
-                        <p className="text-xs text-muted-foreground">Código: {movement.codigo}</p>
+                        <p className="font-medium text-sm">{movement.equipamentos?.nome}</p>
+                        <p className="text-xs text-muted-foreground">Código: {movement.equipamentos?.codigo}</p>
                       </div>
                       <Badge variant="outline" className={getActionColor(movement.tipo)}>
                         {movement.tipo}
@@ -209,12 +283,12 @@ export default function CheckIn() {
                     
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                       <User className="h-3 w-3" />
-                      {movement.usuario}
+                      {movement.por}
                     </div>
                     
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {movement.data}
+                      {new Date(movement.data).toLocaleString()}
                     </div>
                     
                     {movement.observacoes && (

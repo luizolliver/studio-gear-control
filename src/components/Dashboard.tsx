@@ -2,24 +2,22 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Users, ArrowRight, AlertTriangle, TrendingUp, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useEquipamentos } from "@/hooks/useEquipamentos";
+import { useMovimentacoes } from "@/hooks/useMovimentacoes";
 
 export function Dashboard() {
-  // Mock data - substituir por dados reais do Supabase
+  const { data: equipamentos } = useEquipamentos();
+  const { data: movimentacoes } = useMovimentacoes();
+
   const stats = {
-    totalEquipamentos: 45,
-    equipamentosDisponiveis: 32,
-    equipamentosEmUso: 10,
-    equipamentosManutencao: 3,
-    totalUsuarios: 15,
-    movimentacoesMes: 120
+    totalEquipamentos: equipamentos?.length || 0,
+    equipamentosDisponiveis: equipamentos?.filter(eq => eq.status === 'Disponível').length || 0,
+    equipamentosEmUso: equipamentos?.filter(eq => eq.status === 'Em uso').length || 0,
+    equipamentosManutencao: equipamentos?.filter(eq => eq.status === 'Manutenção').length || 0,
+    movimentacoesMes: movimentacoes?.length || 0
   };
 
-  const equipamentosRecentes = [
-    { id: 1, nome: "Câmera Sony FX6", codigo: "CAM001", status: "Em uso", usuario: "João Silva", tempo: "2h" },
-    { id: 2, nome: "Microfone Rode NTG4+", codigo: "MIC005", status: "Disponível", usuario: "", tempo: "" },
-    { id: 3, nome: "Lente Canon 24-70mm", codigo: "LEN003", status: "Manutenção", usuario: "", tempo: "5 dias" },
-    { id: 4, nome: "Tripé Manfrotto", codigo: "TRI001", status: "Em uso", usuario: "Maria Santos", tempo: "4h" },
-  ];
+  const equipamentosRecentes = equipamentos?.slice(0, 4) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -48,7 +46,7 @@ export function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalEquipamentos}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+2</span> este mês
+              Equipamentos cadastrados
             </p>
           </CardContent>
         </Card>
@@ -61,7 +59,7 @@ export function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.equipamentosDisponiveis}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((stats.equipamentosDisponiveis / stats.totalEquipamentos) * 100)}% do total
+              {stats.totalEquipamentos > 0 ? Math.round((stats.equipamentosDisponiveis / stats.totalEquipamentos) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -74,7 +72,7 @@ export function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.equipamentosEmUso}</div>
             <p className="text-xs text-muted-foreground">
-              Por {stats.equipamentosEmUso} usuários
+              Por usuários
             </p>
           </CardContent>
         </Card>
@@ -99,10 +97,10 @@ export function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Atividade Recente
+              Equipamentos
             </CardTitle>
             <CardDescription>
-              Últimos equipamentos movimentados
+              Últimos equipamentos cadastrados
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -112,17 +110,14 @@ export function Dashboard() {
                   <div className="space-y-1">
                     <p className="font-medium text-sm">{item.nome}</p>
                     <p className="text-xs text-muted-foreground">Código: {item.codigo}</p>
-                    {item.usuario && (
-                      <p className="text-xs text-muted-foreground">Por: {item.usuario}</p>
+                    {item.usuario_atual && (
+                      <p className="text-xs text-muted-foreground">Por: {item.usuario_atual}</p>
                     )}
                   </div>
                   <div className="text-right space-y-1">
                     <Badge variant="outline" className={getStatusColor(item.status)}>
                       {item.status}
                     </Badge>
-                    {item.tempo && (
-                      <p className="text-xs text-muted-foreground">{item.tempo}</p>
-                    )}
                   </div>
                 </div>
               ))}
