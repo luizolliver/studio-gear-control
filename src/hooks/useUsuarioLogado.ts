@@ -11,19 +11,22 @@ export const useUsuarioLogado = () => {
     queryFn: async () => {
       if (!user?.email) return null
       
+      console.log('Buscando usuário com email:', user.email)
+      
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('email', user.email)
         .eq('ativo', true)
-        .single()
+        .maybeSingle()
       
       if (error) {
-        console.log('Usuário não encontrado na tabela usuarios:', error)
+        console.log('Erro ao buscar usuário:', error)
         return null
       }
       
-      return data as Usuario
+      console.log('Usuário encontrado:', data)
+      return data as Usuario | null
     },
     enabled: !!user?.email
   })
