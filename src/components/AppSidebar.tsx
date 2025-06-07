@@ -26,6 +26,7 @@ import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useToast } from "@/hooks/use-toast";
+import { useUsuarioLogado } from "@/hooks/useUsuarioLogado";
 
 const menuItems = [
   {
@@ -70,6 +71,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
+  const { data: usuarioCompleto } = useUsuarioLogado();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -89,11 +91,11 @@ export function AppSidebar() {
   };
 
   const getUserDisplayName = () => {
-    return user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+    return usuarioCompleto?.nome || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
   };
 
   const getUserInitials = () => {
-    const name = user?.user_metadata?.name || user?.email || '';
+    const name = usuarioCompleto?.nome || user?.user_metadata?.name || user?.email || '';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 

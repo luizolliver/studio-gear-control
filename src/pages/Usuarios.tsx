@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { AdminProtected } from "@/components/AdminProtected";
@@ -104,6 +103,7 @@ const Usuarios = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>Telefone</TableHead>
                       <TableHead>Função</TableHead>
                       <TableHead>Status</TableHead>
@@ -115,6 +115,7 @@ const Usuarios = () => {
                     {usuarios.map((usuario) => (
                       <TableRow key={usuario.id}>
                         <TableCell className="font-medium">{usuario.nome}</TableCell>
+                        <TableCell>{usuario.email}</TableCell>
                         <TableCell>{usuario.telefone}</TableCell>
                         <TableCell>
                           <Badge variant={usuario.funcao === 'admin' ? 'default' : 'secondary'}>

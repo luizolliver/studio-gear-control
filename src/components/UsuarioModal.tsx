@@ -18,6 +18,7 @@ interface UsuarioModalProps {
 
 export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
   const [nome, setNome] = useState('')
+  const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
   const [funcao, setFuncao] = useState<'funcionario' | 'admin'>('funcionario')
   const [ativo, setAtivo] = useState(true)
@@ -29,11 +30,13 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
   useEffect(() => {
     if (usuario) {
       setNome(usuario.nome)
+      setEmail(usuario.email)
       setTelefone(usuario.telefone)
       setFuncao(usuario.funcao)
       setAtivo(usuario.ativo)
     } else {
       setNome('')
+      setEmail('')
       setTelefone('')
       setFuncao('funcionario')
       setAtivo(true)
@@ -45,6 +48,7 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
     
     const usuarioData = {
       nome,
+      email,
       telefone,
       funcao,
       ativo
@@ -90,6 +94,17 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
               id="nome"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>

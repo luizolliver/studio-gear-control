@@ -35,6 +35,7 @@ export interface HistoricoMovimentacao {
 export interface Usuario {
   id: string
   nome: string
+  email: string
   telefone: string
   funcao: 'funcionario' | 'admin'
   ativo: boolean

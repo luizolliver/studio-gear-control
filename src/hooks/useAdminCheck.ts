@@ -1,14 +1,11 @@
 
-import { useAuth } from '@/hooks/useAuth'
+import { useUsuarioLogado } from '@/hooks/useUsuarioLogado'
 
 export const useAdminCheck = () => {
-  const { user } = useAuth()
+  const { data: usuario, isLoading } = useUsuarioLogado()
   
-  // Verificar se o usuário tem função de admin
-  // Você pode ajustar essa lógica conforme sua estrutura de dados
-  const isAdmin = user?.user_metadata?.role === 'admin' || 
-                   user?.email?.includes('admin') || 
-                   user?.user_metadata?.funcao === 'admin'
+  // Verificar se o usuário tem função de admin na tabela usuarios
+  const isAdmin = usuario?.funcao === 'admin'
   
-  return { isAdmin }
+  return { isAdmin, isLoading, usuario }
 }
