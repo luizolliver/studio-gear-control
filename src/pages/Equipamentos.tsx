@@ -14,13 +14,16 @@ import { Equipamento } from "@/lib/supabase";
 
 export default function Equipamentos() {
   const { data: equipamentos, isLoading, error } = useEquipamentos();
-  const { isAdmin } = useAdminCheck();
+  const { isAdmin, usuario } = useAdminCheck();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEquipamento, setSelectedEquipamento] = useState<Equipamento | null>(null);
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
+
+  console.log('Equipamentos - isAdmin:', isAdmin)
+  console.log('Equipamentos - usuario:', usuario)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -41,13 +44,21 @@ export default function Equipamentos() {
   }) || [];
 
   const handleNewEquipamento = () => {
-    if (!isAdmin) return;
+    console.log('Tentando criar novo equipamento - isAdmin:', isAdmin)
+    if (!isAdmin) {
+      console.log('Acesso negado para criar equipamento')
+      return;
+    }
     setSelectedEquipamento(null);
     setIsModalOpen(true);
   };
 
   const handleEditEquipamento = (equipamento: Equipamento) => {
-    if (!isAdmin) return;
+    console.log('Tentando editar equipamento - isAdmin:', isAdmin)
+    if (!isAdmin) {
+      console.log('Acesso negado para editar equipamento')
+      return;
+    }
     setSelectedEquipamento(equipamento);
     setIsModalOpen(true);
   };

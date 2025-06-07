@@ -9,7 +9,19 @@ interface AdminProtectedProps {
 }
 
 export function AdminProtected({ children }: AdminProtectedProps) {
-  const { isAdmin } = useAdminCheck()
+  const { isAdmin, isLoading, usuario } = useAdminCheck()
+
+  console.log('AdminProtected - isLoading:', isLoading)
+  console.log('AdminProtected - usuario:', usuario)
+  console.log('AdminProtected - isAdmin:', isAdmin)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
 
   if (!isAdmin) {
     return (
@@ -28,6 +40,11 @@ export function AdminProtected({ children }: AdminProtectedProps) {
             <p className="text-sm text-muted-foreground">
               Esta funcionalidade está disponível apenas para administradores.
             </p>
+            {usuario && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Usuário: {usuario.nome} | Função: {usuario.funcao}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
