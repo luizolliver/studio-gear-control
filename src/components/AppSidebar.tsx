@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -20,10 +19,12 @@ import {
   BarChart3,
   Video,
   User,
-  LogOut
+  LogOut,
+  Lock
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
@@ -31,37 +32,44 @@ const menuItems = [
     title: "Dashboard",
     url: "/",
     icon: Home,
+    adminOnly: false,
   },
   {
     title: "Equipamentos",
     url: "/equipamentos",
     icon: Package,
+    adminOnly: false,
   },
   {
     title: "Check-in/Check-out",
     url: "/checkin",
     icon: ArrowRight,
+    adminOnly: false,
   },
   {
     title: "Usuários",
     url: "/usuarios",
     icon: Users,
+    adminOnly: true,
   },
   {
     title: "Relatórios",
     url: "/relatorios",
     icon: BarChart3,
+    adminOnly: false,
   },
   {
     title: "Perfil",
     url: "/profile",
     icon: User,
+    adminOnly: false,
   },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -111,14 +119,23 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
-                    asChild 
+                    asChild={!item.adminOnly || isAdmin}
                     isActive={location.pathname === item.url}
                     className="hover:bg-sidebar-accent transition-colors"
+                    disabled={item.adminOnly && !isAdmin}
                   >
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
+                    {item.adminOnly && !isAdmin ? (
+                      <div className="flex items-center gap-2 opacity-50 cursor-not-allowed">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        <Lock className="h-3 w-3 ml-auto" />
+                      </div>
+                    ) : (
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -137,6 +154,9 @@ export function AppSidebar() {
           <div className="flex-1">
             <p className="text-sm font-medium text-sidebar-foreground">{getUserDisplayName()}</p>
             <p className="text-xs text-sidebar-foreground/60">{user?.email}</p>
+            {isAdmin && (
+              <p className="text-xs text-primary font-medium">Admin</p>
+            )}
           </div>
         </div>
         

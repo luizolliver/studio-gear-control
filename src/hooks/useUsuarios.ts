@@ -35,3 +35,41 @@ export const useCreateUsuario = () => {
     }
   })
 }
+
+export const useUpdateUsuario = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Usuario> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .update(updates)
+        .eq('id', id)
+        .select()
+      
+      if (error) throw error
+      return data[0]
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+    }
+  })
+}
+
+export const useDeleteUsuario = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('usuarios')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
+    }
+  })
+}

@@ -1,10 +1,12 @@
 import { Layout } from "@/components/Layout";
+import { AdminProtected } from "@/components/AdminProtected";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, Edit, Trash2, Loader2, QrCode } from "lucide-react";
 import { useEquipamentos } from "@/hooks/useEquipamentos";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useState } from "react";
 import { EquipamentoModal } from "@/components/EquipamentoModal";
 import { QRCodeGenerator } from "@/components/QRCodeGenerator";
@@ -12,6 +14,7 @@ import { Equipamento } from "@/lib/supabase";
 
 export default function Equipamentos() {
   const { data: equipamentos, isLoading, error } = useEquipamentos();
+  const { isAdmin } = useAdminCheck();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -38,11 +41,13 @@ export default function Equipamentos() {
   }) || [];
 
   const handleNewEquipamento = () => {
+    if (!isAdmin) return;
     setSelectedEquipamento(null);
     setIsModalOpen(true);
   };
 
   const handleEditEquipamento = (equipamento: Equipamento) => {
+    if (!isAdmin) return;
     setSelectedEquipamento(equipamento);
     setIsModalOpen(true);
   };
@@ -78,10 +83,12 @@ export default function Equipamentos() {
             <h1 className="text-3xl font-bold">Equipamentos</h1>
             <p className="text-muted-foreground">Gerencie todos os equipamentos da produtora</p>
           </div>
-          <Button className="flex items-center gap-2" onClick={handleNewEquipamento}>
-            <Plus className="h-4 w-4" />
-            Novo Equipamento
-          </Button>
+          {isAdmin && (
+            <Button className="flex items-center gap-2" onClick={handleNewEquipamento}>
+              <Plus className="h-4 w-4" />
+              Novo Equipamento
+            </Button>
+          )}
         </div>
 
         {/* QR Code Display */}
@@ -195,24 +202,28 @@ export default function Equipamentos() {
                   </div>
                   
                   <div className="flex gap-2 pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleEditEquipamento(equipamento)}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Editar
-                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleEditEquipamento(equipamento)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleShowQRCode(equipamento.codigo)}
                     >
                       <QrCode className="h-3 w-3" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </CardContent>
@@ -232,12 +243,14 @@ export default function Equipamentos() {
           </div>
         )}
 
-        {/* Modal de Equipamento */}
-        <EquipamentoModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          equipamento={selectedEquipamento}
-        />
+        {/* Modal de Equipamento - apenas para admin */}
+        {isAdmin && (
+          <EquipamentoModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            equipamento={selectedEquipamento}
+          />
+        )}
       </div>
     </Layout>
   );
