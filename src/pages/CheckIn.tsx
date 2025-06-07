@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Search, ArrowRight, ArrowLeft, Clock, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEquipamentos, useUpdateEquipamento } from "@/hooks/useEquipamentos";
 import { useMovimentacoes, useCreateMovimentacao } from "@/hooks/useMovimentacoes";
 import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function CheckIn() {
   const [searchCode, setSearchCode] = useState("");
@@ -25,6 +25,15 @@ export default function CheckIn() {
   const updateEquipamento = useUpdateEquipamento();
   const createMovimentacao = useCreateMovimentacao();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Preencher automaticamente o campo usuário com o nome do usuário logado
+  useEffect(() => {
+    if (user && !usuario) {
+      const displayName = user.user_metadata?.name || user.email?.split('@')[0] || '';
+      setUsuario(displayName);
+    }
+  }, [user, usuario]);
 
   const handleSearch = () => {
     const equipamento = equipamentos?.find(eq => 
@@ -65,31 +74,25 @@ export default function CheckIn() {
     try {
       const isCheckout = action === 'checkout';
       
-      // Preparar dados para atualização do equipamento
       const updateData: any = {
         id: selectedEquipment.id,
         status: isCheckout ? 'Em uso' : 'Disponível'
       };
 
-      // Adicionar campos opcionais apenas se existirem na interface
       if (isCheckout) {
         updateData.localizacao = usuario;
-        // Só incluir usuario_atual se o campo existir
         if ('usuario_atual' in selectedEquipment) {
           updateData.usuario_atual = usuario;
         }
       } else {
         updateData.localizacao = 'Estoque';
-        // Só incluir usuario_atual se o campo existir
         if ('usuario_atual' in selectedEquipment) {
           updateData.usuario_atual = null;
         }
       }
 
-      // Atualizar status do equipamento
       await updateEquipamento.mutateAsync(updateData);
 
-      // Criar movimentação
       await createMovimentacao.mutateAsync({
         equipamento_id: selectedEquipment.id,
         tipo: isCheckout ? 'Retirada' : 'Devolução',
@@ -102,12 +105,14 @@ export default function CheckIn() {
         description: `Equipamento ${selectedEquipment.nome} foi ${isCheckout ? 'retirado' : 'devolvido'}.`
       });
 
-      // Reset form
       setSelectedEquipment(null);
       setAction(null);
-      setUsuario("");
       setObservacoes("");
       setSearchCode("");
+      
+      // Manter o nome do usuário para próximas operações
+      const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || '';
+      setUsuario(displayName);
 
     } catch (error) {
       console.error('Erro ao processar operação:', error);
@@ -241,6 +246,9 @@ export default function CheckIn() {
                         value={usuario}
                         onChange={(e) => setUsuario(e.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Preenchido automaticamente com seu usuário
+                      </p>
                     </div>
                     
                     <div>

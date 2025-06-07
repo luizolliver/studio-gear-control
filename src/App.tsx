@@ -11,6 +11,7 @@ import Equipamentos from "./pages/Equipamentos";
 import CheckIn from "./pages/CheckIn";
 import Usuarios from "./pages/Usuarios";
 import Relatorios from "./pages/Relatorios";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ function AppContent() {
         <Route path="/checkin" element={<CheckIn />} />
         <Route path="/usuarios" element={<Usuarios />} />
         <Route path="/relatorios" element={<Relatorios />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

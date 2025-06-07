@@ -11,17 +11,20 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { 
   Home, 
   Package, 
   Users, 
   ArrowRight, 
-  ArrowLeft, 
   BarChart3,
   Video,
-  User
+  User,
+  LogOut
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   {
@@ -49,10 +52,42 @@ const menuItems = [
     url: "/relatorios",
     icon: BarChart3,
   },
+  {
+    title: "Perfil",
+    url: "/profile",
+    icon: User,
+  },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso."
+      });
+    }
+  };
+
+  const getUserDisplayName = () => {
+    return user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  };
+
+  const getUserInitials = () => {
+    const name = user?.user_metadata?.name || user?.email || '';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   return (
     <Sidebar className="border-r border-sidebar-border">
@@ -92,16 +127,28 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
         <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-            <User className="h-4 w-4 text-primary-foreground" />
+            <span className="text-xs font-semibold text-primary-foreground">
+              {getUserInitials()}
+            </span>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-sidebar-foreground">Admin</p>
-            <p className="text-xs text-sidebar-foreground/60">Administrador</p>
+            <p className="text-sm font-medium text-sidebar-foreground">{getUserDisplayName()}</p>
+            <p className="text-xs text-sidebar-foreground/60">{user?.email}</p>
           </div>
         </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleLogout}
+          className="w-full"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sair
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
