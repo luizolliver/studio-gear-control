@@ -1,16 +1,27 @@
 
-import { useUsuarioLogado } from '@/hooks/useUsuarioLogado'
+import { useAuth } from '@/hooks/useAuth'
 
 export const useAdminCheck = () => {
-  const { data: usuario, isLoading } = useUsuarioLogado()
+  const { user, loading } = useAuth()
   
-  console.log('useAdminCheck - Usuario:', usuario)
-  console.log('useAdminCheck - Função:', usuario?.funcao)
+  console.log('useAdminCheck - User:', user)
   
-  // Verificar se o usuário tem função de admin na tabela usuarios
-  const isAdmin = usuario?.funcao === 'admin'
+  // Todos os usuários autenticados são admin
+  const isAdmin = !!user
   
   console.log('useAdminCheck - isAdmin:', isAdmin)
   
-  return { isAdmin, isLoading, usuario }
+  return { 
+    isAdmin, 
+    isLoading: loading, 
+    usuario: user ? {
+      id: user.id,
+      nome: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+      email: user.email || '',
+      telefone: '',
+      funcao: 'admin' as const,
+      ativo: true,
+      criado_em: new Date().toISOString()
+    } : null
+  }
 }
