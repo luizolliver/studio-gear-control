@@ -1,10 +1,11 @@
+
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Search, ArrowRight, ArrowLeft, Clock, User } from "lucide-react";
+import { QrCode, Search, ArrowRight, ArrowLeft, Clock, User, X, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useEquipamentos, useUpdateEquipamento } from "@/hooks/useEquipamentos";
 import { useMovimentacoes, useCreateMovimentacao } from "@/hooks/useMovimentacoes";
@@ -14,11 +15,12 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function CheckIn() {
   const [searchCode, setSearchCode] = useState("");
-  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+  const [selectedEquipments, setSelectedEquipments] = useState<any[]>([]);
   const [action, setAction] = useState<"checkout" | "checkin" | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [usuario, setUsuario] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const { data: equipamentos } = useEquipamentos();
   const { data: movimentacoes } = useMovimentacoes();
@@ -35,77 +37,144 @@ export default function CheckIn() {
     }
   }, [user, usuario]);
 
-  const handleSearch = () => {
+  const addEquipment = (codigo: string) => {
     const equipamento = equipamentos?.find(eq => 
-      eq.codigo.toLowerCase() === searchCode.toLowerCase()
+      eq.codigo.toLowerCase() === codigo.toLowerCase()
     );
     
     if (equipamento) {
-      setSelectedEquipment(equipamento);
+      // Verificar se já foi adicionado
+      if (selectedEquipments.find(eq => eq.id === equipamento.id)) {
+        toast({
+          title: "Equipamento já adicionado",
+          description: `O equipamento "${equipamento.nome}" já está na lista.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Verificar se todos os equipamentos selecionados têm o mesmo status ou se é o primeiro
+      if (selectedEquipments.length > 0) {
+        const firstStatus = selectedEquipments[0].status;
+        if (equipamento.status !== firstStatus) {
+          toast({
+            title: "Status incompatível",
+            description: `Todos os equipamentos devem ter o mesmo status. O primeiro é "${firstStatus}" e este é "${equipamento.status}".`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+      
+      setSelectedEquipments(prev => [...prev, equipamento]);
+      setSearchCode("");
+      
+      // Definir ação automaticamente baseada no status
+      if (selectedEquipments.length === 0) {
+        setAction(equipamento.status === 'Disponível' ? 'checkout' : 'checkin');
+      }
+      
+      toast({
+        title: "Equipamento adicionado",
+        description: `"${equipamento.nome}" foi adicionado à lista.`
+      });
     } else {
       toast({
         title: "Equipamento não encontrado",
-        description: `Nenhum equipamento com código "${searchCode}" foi encontrado.`,
+        description: `Nenhum equipamento com código "${codigo}" foi encontrado.`,
         variant: "destructive"
       });
-      setSelectedEquipment(null);
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchCode.trim()) {
+      addEquipment(searchCode.trim());
     }
   };
 
   const handleQRScan = (result: string) => {
-    setSearchCode(result);
+    addEquipment(result);
     setShowScanner(false);
-    const equipamento = equipamentos?.find(eq => 
-      eq.codigo.toLowerCase() === result.toLowerCase()
-    );
-    
-    if (equipamento) {
-      setSelectedEquipment(equipamento);
+  };
+
+  const removeEquipment = (id: string) => {
+    setSelectedEquipments(prev => prev.filter(eq => eq.id !== id));
+    if (selectedEquipments.length === 1) {
+      setAction(null);
     }
   };
 
-  const handleAction = (actionType: "checkout" | "checkin") => {
-    setAction(actionType);
+  const clearAll = () => {
+    setSelectedEquipments([]);
+    setAction(null);
+    setObservacoes("");
   };
 
   const handleConfirm = async () => {
-    if (!selectedEquipment || !action || !usuario.trim()) return;
+    if (selectedEquipments.length === 0 || !action || !usuario.trim()) return;
 
+    setIsProcessing(true);
+    
     try {
       const isCheckout = action === 'checkout';
-      
-      const updateData: any = {
-        id: selectedEquipment.id,
-        status: isCheckout ? 'Em uso' : 'Disponível'
-      };
+      let successCount = 0;
+      let errorCount = 0;
 
-      if (isCheckout) {
-        updateData.localizacao = usuario;
-        if ('usuario_atual' in selectedEquipment) {
-          updateData.usuario_atual = usuario;
-        }
-      } else {
-        updateData.localizacao = 'Estoque';
-        if ('usuario_atual' in selectedEquipment) {
-          updateData.usuario_atual = null;
+      // Processar cada equipamento
+      for (const equipamento of selectedEquipments) {
+        try {
+          const updateData: any = {
+            id: equipamento.id,
+            status: isCheckout ? 'Em uso' : 'Disponível'
+          };
+
+          if (isCheckout) {
+            updateData.localizacao = usuario;
+            if ('usuario_atual' in equipamento) {
+              updateData.usuario_atual = usuario;
+            }
+          } else {
+            updateData.localizacao = 'Estoque';
+            if ('usuario_atual' in equipamento) {
+              updateData.usuario_atual = null;
+            }
+          }
+
+          await updateEquipamento.mutateAsync(updateData);
+
+          await createMovimentacao.mutateAsync({
+            equipamento_id: equipamento.id,
+            tipo: isCheckout ? 'Retirada' : 'Devolução',
+            por: usuario,
+            observacoes: observacoes || undefined
+          });
+
+          successCount++;
+        } catch (error) {
+          console.error(`Erro ao processar equipamento ${equipamento.nome}:`, error);
+          errorCount++;
         }
       }
 
-      await updateEquipamento.mutateAsync(updateData);
+      // Mostrar resultado
+      if (successCount > 0) {
+        toast({
+          title: `${isCheckout ? 'Retiradas' : 'Devoluções'} processadas!`,
+          description: `${successCount} equipamento(s) ${isCheckout ? 'retirado(s)' : 'devolvido(s)'} com sucesso.${errorCount > 0 ? ` ${errorCount} erro(s) encontrado(s).` : ''}`
+        });
+      }
 
-      await createMovimentacao.mutateAsync({
-        equipamento_id: selectedEquipment.id,
-        tipo: isCheckout ? 'Retirada' : 'Devolução',
-        por: usuario,
-        observacoes: observacoes || undefined
-      });
+      if (errorCount > 0 && successCount === 0) {
+        toast({
+          title: "Erro no processamento",
+          description: "Nenhum equipamento foi processado devido a erros.",
+          variant: "destructive"
+        });
+      }
 
-      toast({
-        title: `${isCheckout ? 'Retirada' : 'Devolução'} realizada com sucesso!`,
-        description: `Equipamento ${selectedEquipment.nome} foi ${isCheckout ? 'retirado' : 'devolvido'}.`
-      });
-
-      setSelectedEquipment(null);
+      // Limpar formulário
+      setSelectedEquipments([]);
       setAction(null);
       setObservacoes("");
       setSearchCode("");
@@ -115,12 +184,14 @@ export default function CheckIn() {
       setUsuario(displayName);
 
     } catch (error) {
-      console.error('Erro ao processar operação:', error);
+      console.error('Erro geral no processamento:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao processar a operação.",
+        description: "Ocorreu um erro durante o processamento.",
         variant: "destructive"
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -128,6 +199,12 @@ export default function CheckIn() {
     return tipo === "Retirada" 
       ? "bg-orange-100 text-orange-800 border-orange-200"
       : "bg-green-100 text-green-800 border-green-200";
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    return status === 'Disponível' 
+      ? 'bg-green-100 text-green-800 border-green-200'
+      : 'bg-yellow-100 text-yellow-800 border-yellow-200';
   };
 
   return (
@@ -145,10 +222,10 @@ export default function CheckIn() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Search className="h-5 w-5" />
-                Buscar Equipamento
+                Buscar Equipamentos
               </CardTitle>
               <CardDescription>
-                Digite o código ou escaneie o QR Code
+                Digite códigos ou escaneie QR Codes para adicionar múltiplos equipamentos
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -161,8 +238,8 @@ export default function CheckIn() {
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
-                <Button onClick={handleSearch}>
-                  <Search className="h-4 w-4" />
+                <Button onClick={handleSearch} disabled={!searchCode.trim()}>
+                  <Plus className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" onClick={() => setShowScanner(!showScanner)}>
                   <QrCode className="h-4 w-4" />
@@ -177,65 +254,63 @@ export default function CheckIn() {
                 />
               )}
 
-              {/* Equipment Found */}
-              {selectedEquipment && (
-                <div className="p-4 border rounded-lg bg-accent/50">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold">{selectedEquipment.nome}</h3>
-                        <p className="text-sm text-muted-foreground">Código: {selectedEquipment.codigo}</p>
-                        <p className="text-sm text-muted-foreground">Categoria: {selectedEquipment.categoria}</p>
-                      </div>
-                      <Badge variant="outline" className={
-                        selectedEquipment.status === 'Disponível' 
-                          ? 'bg-green-100 text-green-800 border-green-200'
-                          : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                      }>
-                        {selectedEquipment.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Localização: </span>
-                      <span className="font-medium">{selectedEquipment.localizacao}</span>
-                    </div>
+              {/* Selected Equipments List */}
+              {selectedEquipments.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Equipamentos Selecionados ({selectedEquipments.length})</h4>
+                    <Button variant="outline" size="sm" onClick={clearAll}>
+                      Limpar Todos
+                    </Button>
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {selectedEquipments.map((equipamento) => (
+                      <div key={equipamento.id} className="p-3 border rounded-lg bg-accent/50 flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h5 className="font-medium text-sm">{equipamento.nome}</h5>
+                              <p className="text-xs text-muted-foreground">Código: {equipamento.codigo}</p>
+                              <p className="text-xs text-muted-foreground">Categoria: {equipamento.categoria}</p>
+                            </div>
+                            <Badge variant="outline" className={getStatusBadgeColor(equipamento.status)}>
+                              {equipamento.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Localização: </span>
+                            <span className="font-medium">{equipamento.localizacao}</span>
+                          </div>
 
-                    {selectedEquipment.usuario_atual && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Em uso por: </span>
-                        <span className="font-medium">{selectedEquipment.usuario_atual}</span>
+                          {equipamento.usuario_atual && (
+                            <div className="text-xs">
+                              <span className="text-muted-foreground">Em uso por: </span>
+                              <span className="font-medium">{equipamento.usuario_atual}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeEquipment(equipamento.id)}
+                          className="text-destructive hover:text-destructive ml-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    )}
-
-                    <div className="flex gap-2 pt-2">
-                      {selectedEquipment.status === 'Disponível' ? (
-                        <Button 
-                          onClick={() => handleAction('checkout')}
-                          className="flex-1 bg-orange-600 hover:bg-orange-700"
-                        >
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Retirar
-                        </Button>
-                      ) : (
-                        <Button 
-                          onClick={() => handleAction('checkin')}
-                          className="flex-1 bg-green-600 hover:bg-green-700"
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          Devolver
-                        </Button>
-                      )}
-                    </div>
+                    ))}
                   </div>
                 </div>
               )}
 
               {/* Action Form */}
-              {action && selectedEquipment && (
+              {action && selectedEquipments.length > 0 && (
                 <div className="p-4 border rounded-lg space-y-4">
                   <h4 className="font-semibold">
-                    {action === 'checkout' ? 'Retirar Equipamento' : 'Devolver Equipamento'}
+                    {action === 'checkout' ? 'Retirar Equipamentos' : 'Devolver Equipamentos'} ({selectedEquipments.length} item{selectedEquipments.length > 1 ? 's' : ''})
                   </h4>
                   
                   <div className="space-y-3">
@@ -264,13 +339,14 @@ export default function CheckIn() {
                       <Button 
                         className="flex-1" 
                         onClick={handleConfirm}
-                        disabled={!usuario.trim() || updateEquipamento.isPending || createMovimentacao.isPending}
+                        disabled={!usuario.trim() || isProcessing}
                       >
-                        Confirmar {action === 'checkout' ? 'Retirada' : 'Devolução'}
+                        {isProcessing ? 'Processando...' : `Confirmar ${action === 'checkout' ? 'Retiradas' : 'Devoluções'}`}
                       </Button>
                       <Button 
                         variant="outline" 
-                        onClick={() => setAction(null)}
+                        onClick={clearAll}
+                        disabled={isProcessing}
                       >
                         Cancelar
                       </Button>
