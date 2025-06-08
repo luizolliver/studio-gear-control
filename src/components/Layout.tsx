@@ -1,6 +1,7 @@
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { ThemeToggle } from "./ThemeToggle";
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -19,6 +20,7 @@ export function Layout({ children }: LayoutProps) {
               <div className="flex-1">
                 <h2 className="text-lg font-semibold">Sistema de Controle de Equipamentos</h2>
               </div>
+              <ThemeToggle />
             </div>
           </header>
           <div className="flex-1 overflow-auto p-6">

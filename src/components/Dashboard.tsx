@@ -1,13 +1,16 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Users, ArrowRight, AlertTriangle, TrendingUp, Clock } from "lucide-react";
+import { Package, ArrowRight, AlertTriangle, TrendingUp, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useEquipamentos } from "@/hooks/useEquipamentos";
 import { useMovimentacoes } from "@/hooks/useMovimentacoes";
+import { useNavigate } from "react-router-dom";
 
 export function Dashboard() {
   const { data: equipamentos } = useEquipamentos();
   const { data: movimentacoes } = useMovimentacoes();
+  const navigate = useNavigate();
 
   const stats = {
     totalEquipamentos: equipamentos?.length || 0,
@@ -138,35 +141,33 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3">
-              <button className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors text-left">
+              <Button 
+                variant="outline"
+                className="flex items-center gap-3 p-4 h-auto justify-start"
+                onClick={() => navigate('/checkin')}
+              >
                 <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
                   <ArrowRight className="h-5 w-5 text-green-600" />
                 </div>
-                <div>
+                <div className="text-left">
                   <p className="font-medium">Check-out Rápido</p>
                   <p className="text-xs text-muted-foreground">Retirar equipamento</p>
                 </div>
-              </button>
+              </Button>
               
-              <button className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors text-left">
+              <Button 
+                variant="outline"
+                className="flex items-center gap-3 p-4 h-auto justify-start"
+                onClick={() => navigate('/equipamentos')}
+              >
                 <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                   <Package className="h-5 w-5 text-blue-600" />
                 </div>
-                <div>
+                <div className="text-left">
                   <p className="font-medium">Cadastrar Equipamento</p>
                   <p className="text-xs text-muted-foreground">Adicionar novo item</p>
                 </div>
-              </button>
-              
-              <button className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors text-left">
-                <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="font-medium">Gerenciar Usuários</p>
-                  <p className="text-xs text-muted-foreground">Controle de acesso</p>
-                </div>
-              </button>
+              </Button>
             </div>
           </CardContent>
         </Card>
