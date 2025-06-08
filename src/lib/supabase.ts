@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Configure suas credenciais do Supabase self-hosted aqui
-const supabaseUrl = 'https://SEU_DOMINIO_SUPABASE'  // Ex: https://supabase.minhaempresa.com
-const supabaseAnonKey = 'SUA_CHAVE_ANON_PUBLICA'   // Chave pública/anon do seu projeto
+const supabaseUrl = 'https://supabaselpserver.masterapps.net'  // Ex: https://supabase.minhaempresa.com
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzE1MDUwODAwLAogICJleHAiOiAxODcyODE3MjAwCn0.vQ-zvbPnbWrxwcCO_2AHXTeXCPgynZuNvads3OUuisw'   // Chave pública/anon do seu projeto
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
