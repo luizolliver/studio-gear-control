@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { useCreateUsuario, useUpdateUsuario } from '@/hooks/useUsuarios'
 import { useToast } from '@/hooks/use-toast'
 import { Usuario } from '@/lib/supabase'
+import { hashPassword } from '@/lib/auth'
 
 interface UsuarioModalProps {
   isOpen: boolean
@@ -58,17 +59,22 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
       return
     }
 
-    const usuarioData = {
-      nome,
-      email,
-      telefone,
-      funcao,
-      ativo,
-      senha: senha || undefined, // Só incluir senha se fornecida
-      is_master_admin: false
-    }
-
     try {
+      let usuarioData: any = {
+        nome,
+        email,
+        telefone,
+        funcao,
+        ativo,
+        is_master_admin: false
+      }
+
+      // Se há uma nova senha, fazer o hash
+      if (senha) {
+        const hashedPassword = await hashPassword(senha)
+        usuarioData.senha = hashedPassword
+      }
+
       if (usuario) {
         // Se estiver editando e não forneceu nova senha, remover do objeto
         if (!senha) {

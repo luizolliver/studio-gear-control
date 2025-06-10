@@ -1,5 +1,7 @@
+
 import { useEffect, useState } from 'react'
 import { supabase, Usuario } from '@/lib/supabase'
+import { verifyPassword, hashPassword } from '@/lib/auth'
 
 export const useAuth = () => {
   const [user, setUser] = useState<Usuario | null>(null)
@@ -18,12 +20,11 @@ export const useAuth = () => {
     try {
       console.log('Tentando fazer login com:', email)
       
-      // Primeiro, buscar o usuário básico
+      // Primeiro, buscar o usuário pelo email
       const { data: usuario, error: userError } = await supabase
         .from('usuarios')
         .select('*')
         .eq('email', email)
-        .eq('senha', password)
         .eq('ativo', true)
         .maybeSingle()
 
@@ -33,7 +34,15 @@ export const useAuth = () => {
       }
       
       if (!usuario) {
-        console.log('Usuário não encontrado ou credenciais incorretas')
+        console.log('Usuário não encontrado')
+        return { data: null, error: { message: 'Email ou senha incorretos' } }
+      }
+
+      // Verificar a senha usando bcrypt
+      const isPasswordValid = await verifyPassword(password, usuario.senha)
+      
+      if (!isPasswordValid) {
+        console.log('Senha incorreta')
         return { data: null, error: { message: 'Email ou senha incorretos' } }
       }
 
@@ -84,9 +93,12 @@ export const useAuth = () => {
 
   const signUp = async (userData: Omit<Usuario, 'id' | 'criado_em'>) => {
     try {
+      // Hash da senha antes de salvar
+      const hashedPassword = await hashPassword(userData.senha)
+      
       const { data, error } = await supabase
         .from('usuarios')
-        .insert([userData])
+        .insert([{ ...userData, senha: hashedPassword }])
         .select()
 
       if (error) throw error
