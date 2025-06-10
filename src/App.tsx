@@ -9,7 +9,7 @@ import { Login } from "@/components/Login";
 import Index from "./pages/Index";
 import Equipamentos from "./pages/Equipamentos";
 import CheckIn from "./pages/CheckIn";
-import Usuarios from "./pages/Usuarios";
+import Empresas from "./pages/Empresas";
 import Relatorios from "./pages/Relatorios";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -37,7 +37,7 @@ function AppContent() {
         <Route path="/" element={<Index />} />
         <Route path="/equipamentos" element={<Equipamentos />} />
         <Route path="/checkin" element={<CheckIn />} />
-        <Route path="/usuarios" element={<Usuarios />} />
+        <Route path="/empresas" element={<Empresas />} />
         <Route path="/relatorios" element={<Relatorios />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />

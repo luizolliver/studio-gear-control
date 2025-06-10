@@ -8,6 +8,34 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogIm
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Tipos baseados na sua estrutura de banco
+export interface Empresa {
+  id: string
+  nome: string
+  cnpj?: string
+  telefone?: string
+  email?: string
+  endereco?: string
+  ativo: boolean
+  criado_em: string
+  atualizado_em: string
+}
+
+export interface Usuario {
+  id: string
+  nome: string
+  email: string
+  senha: string
+  telefone?: string
+  funcao: 'funcionario' | 'admin'
+  empresa_id?: string
+  is_master_admin: boolean
+  ativo: boolean
+  criado_em: string
+  empresas?: {
+    nome: string
+  }
+}
+
 export interface Equipamento {
   id: string
   nome: string
@@ -16,6 +44,7 @@ export interface Equipamento {
   status: 'Disponível' | 'Em uso' | 'Manutenção'
   localizacao: string
   usuario_atual?: string
+  empresa_id: string
   atualizado_em: string
 }
 
@@ -26,18 +55,9 @@ export interface HistoricoMovimentacao {
   por: string
   data: string
   observacoes?: string
+  empresa_id: string
   equipamentos?: {
     nome: string
     codigo: string
   }
-}
-
-export interface Usuario {
-  id: string
-  nome: string
-  email: string
-  telefone: string
-  funcao: 'funcionario' | 'admin'
-  ativo: boolean
-  criado_em: string
 }

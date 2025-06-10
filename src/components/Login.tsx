@@ -4,18 +4,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
+import { useEmpresas } from '@/hooks/useEmpresas'
 import { useToast } from '@/hooks/use-toast'
 
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [empresaId, setEmpresaId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { signIn } = useAuth()
+  const { data: empresas } = useEmpresas()
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!empresaId && email !== 'master@admin.com') {
+      toast({
+        title: 'Selecione uma empresa',
+        description: 'É necessário selecionar uma empresa para fazer login.',
+        variant: 'destructive',
+      })
+      return
+    }
+    
     setIsLoading(true)
 
     const { error } = await signIn(email, password)
@@ -48,6 +62,22 @@ export function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="empresa">Empresa</Label>
+              <Select value={empresaId} onValueChange={setEmpresaId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione sua empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empresas?.filter(empresa => empresa.ativo).map((empresa) => (
+                    <SelectItem key={empresa.id} value={empresa.id}>
+                      {empresa.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -57,6 +87,7 @@ export function Login() {
                 required
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
@@ -67,10 +98,17 @@ export function Login() {
                 required
               />
             </div>
+            
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
+          
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Master Admin: use master@admin.com
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

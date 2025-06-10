@@ -1,49 +1,71 @@
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
+import { supabase, Usuario } from '@/lib/supabase'
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    // Verificar se existe usuário logado no localStorage
+    const storedUser = localStorage.getItem('usuario_logado')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+    setLoading(false)
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { data, error }
-  }
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select(`
+          *,
+          empresas(nome)
+        `)
+        .eq('email', email)
+        .eq('senha', password)
+        .eq('ativo', true)
+        .maybeSingle()
 
-  const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    return { data, error }
+      if (error) throw error
+      
+      if (!data) {
+        return { data: null, error: { message: 'Email ou senha incorretos' } }
+      }
+
+      // Salvar usuário no localStorage
+      localStorage.setItem('usuario_logado', JSON.stringify(data))
+      setUser(data)
+      
+      return { data, error: null }
+    } catch (error: any) {
+      return { data: null, error }
+    }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      localStorage.removeItem('usuario_logado')
+      setUser(null)
+      return { error: null }
+    } catch (error: any) {
+      return { error }
+    }
+  }
+
+  const signUp = async (userData: Omit<Usuario, 'id' | 'criado_em'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .insert([userData])
+        .select()
+
+      if (error) throw error
+      return { data: data[0], error: null }
+    } catch (error: any) {
+      return { data: null, error }
+    }
   }
 
   return {

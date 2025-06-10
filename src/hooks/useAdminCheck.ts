@@ -6,22 +6,17 @@ export const useAdminCheck = () => {
   
   console.log('useAdminCheck - User:', user)
   
-  // Todos os usuários autenticados são admin
-  const isAdmin = !!user
+  // Verificar se é admin da empresa ou master admin
+  const isAdmin = user && (user.funcao === 'admin' || user.is_master_admin)
+  const isMasterAdmin = user && user.is_master_admin
   
   console.log('useAdminCheck - isAdmin:', isAdmin)
+  console.log('useAdminCheck - isMasterAdmin:', isMasterAdmin)
   
   return { 
-    isAdmin, 
+    isAdmin: !!isAdmin, 
+    isMasterAdmin: !!isMasterAdmin,
     isLoading: loading, 
-    usuario: user ? {
-      id: user.id,
-      nome: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
-      email: user.email || '',
-      telefone: '',
-      funcao: 'admin' as const,
-      ativo: true,
-      criado_em: new Date().toISOString()
-    } : null
+    usuario: user
   }
 }

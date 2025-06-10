@@ -19,12 +19,13 @@ import {
   BarChart3,
   Video,
   User,
-  LogOut
+  LogOut,
+  Building2
 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useToast } from "@/hooks/use-toast";
-import { useUsuarioLogado } from "@/hooks/useUsuarioLogado";
 
 const menuItems = [
   {
@@ -54,10 +55,18 @@ const menuItems = [
   },
 ];
 
+const masterAdminItems = [
+  {
+    title: "Gestão de Empresas",
+    url: "/empresas",
+    icon: Building2,
+  },
+];
+
 export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { data: usuarioCompleto } = useUsuarioLogado();
+  const { isMasterAdmin } = useAdminCheck();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -77,11 +86,11 @@ export function AppSidebar() {
   };
 
   const getUserDisplayName = () => {
-    return usuarioCompleto?.nome || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+    return user?.nome || user?.email?.split('@')[0] || 'Usuário';
   };
 
   const getUserInitials = () => {
-    const name = usuarioCompleto?.nome || user?.user_metadata?.name || user?.email || '';
+    const name = user?.nome || user?.email || '';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
@@ -121,6 +130,30 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isMasterAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Master Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {masterAdminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={location.pathname === item.url}
+                      className="hover:bg-sidebar-accent transition-colors"
+                    >
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       
       <SidebarFooter className="p-4 space-y-2">
@@ -133,6 +166,9 @@ export function AppSidebar() {
           <div className="flex-1">
             <p className="text-sm font-medium text-sidebar-foreground">{getUserDisplayName()}</p>
             <p className="text-xs text-sidebar-foreground/60">{user?.email}</p>
+            {user?.empresas && (
+              <p className="text-xs text-sidebar-foreground/60">{user.empresas.nome}</p>
+            )}
           </div>
         </div>
         
