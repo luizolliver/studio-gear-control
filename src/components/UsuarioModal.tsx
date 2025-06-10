@@ -19,6 +19,7 @@ interface UsuarioModalProps {
 export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
   const [telefone, setTelefone] = useState('')
   const [funcao, setFuncao] = useState<'funcionario' | 'admin'>('funcionario')
   const [ativo, setAtivo] = useState(true)
@@ -31,12 +32,14 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
     if (usuario) {
       setNome(usuario.nome)
       setEmail(usuario.email)
-      setTelefone(usuario.telefone)
+      setSenha('') // Não carregar senha por segurança
+      setTelefone(usuario.telefone || '')
       setFuncao(usuario.funcao)
       setAtivo(usuario.ativo)
     } else {
       setNome('')
       setEmail('')
+      setSenha('')
       setTelefone('')
       setFuncao('funcionario')
       setAtivo(true)
@@ -46,17 +49,34 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    if (!usuario && !senha) {
+      toast({
+        title: 'Erro',
+        description: 'Senha é obrigatória para novos usuários.',
+        variant: 'destructive'
+      })
+      return
+    }
+
     const usuarioData = {
       nome,
       email,
       telefone,
       funcao,
-      ativo
+      ativo,
+      senha: senha || undefined, // Só incluir senha se fornecida
+      is_master_admin: false
     }
 
     try {
       if (usuario) {
-        await updateUsuario.mutateAsync({ id: usuario.id, ...usuarioData })
+        // Se estiver editando e não forneceu nova senha, remover do objeto
+        if (!senha) {
+          const { senha: _, ...dataWithoutPassword } = usuarioData
+          await updateUsuario.mutateAsync({ id: usuario.id, ...dataWithoutPassword })
+        } else {
+          await updateUsuario.mutateAsync({ id: usuario.id, ...usuarioData })
+        }
         toast({
           title: 'Usuário atualizado',
           description: 'Usuário foi atualizado com sucesso.'
@@ -110,13 +130,25 @@ export function UsuarioModal({ isOpen, onClose, usuario }: UsuarioModalProps) {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="senha">
+              {usuario ? 'Nova Senha (deixe vazio para manter atual)' : 'Senha'}
+            </Label>
+            <Input
+              id="senha"
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required={!usuario}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="telefone">Telefone</Label>
             <Input
               id="telefone"
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
               placeholder="(11) 99999-9999"
-              required
             />
           </div>
 

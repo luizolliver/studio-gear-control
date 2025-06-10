@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useCreateEquipamento, useUpdateEquipamento } from "@/hooks/useEquipamentos";
 import { Equipamento } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 interface EquipamentoModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export function EquipamentoModal({ isOpen, onClose, equipamento }: EquipamentoMo
   const [localizacao, setLocalizacao] = useState("");
 
   const { toast } = useToast();
+  const { user } = useAuth();
   const createEquipamento = useCreateEquipamento();
   const updateEquipamento = useUpdateEquipamento();
 
@@ -56,6 +58,15 @@ export function EquipamentoModal({ isOpen, onClose, equipamento }: EquipamentoMo
       return;
     }
 
+    if (!user?.empresa_id && !user?.is_master_admin) {
+      toast({
+        title: "Erro",
+        description: "Usuário deve estar vinculado a uma empresa.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       if (isEditing) {
         await updateEquipamento.mutateAsync({
@@ -76,7 +87,8 @@ export function EquipamentoModal({ isOpen, onClose, equipamento }: EquipamentoMo
           codigo,
           categoria,
           status,
-          localizacao
+          localizacao,
+          empresa_id: user.empresa_id || ''
         });
         toast({
           title: "Sucesso",

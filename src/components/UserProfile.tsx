@@ -13,7 +13,7 @@ export function UserProfile() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
-  const [displayName, setDisplayName] = useState(user?.user_metadata?.name || user?.email?.split('@')[0] || '')
+  const [displayName, setDisplayName] = useState(user?.nome || '')
 
   const handleSave = async () => {
     // Em uma implementação real, aqui você salvaria no Supabase
@@ -25,17 +25,17 @@ export function UserProfile() {
   }
 
   const handleCancel = () => {
-    setDisplayName(user?.user_metadata?.name || user?.email?.split('@')[0] || '')
+    setDisplayName(user?.nome || '')
     setIsEditing(false)
   }
 
   const getUserInitials = () => {
-    const name = user?.user_metadata?.name || user?.email || ''
+    const name = user?.nome || user?.email || ''
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
   const getUserDisplayName = () => {
-    return user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
+    return user?.nome || user?.email?.split('@')[0] || 'Usuário'
   }
 
   return (

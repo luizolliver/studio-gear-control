@@ -32,8 +32,7 @@ export default function CheckIn() {
   // Preencher automaticamente o campo usuário com o nome do usuário logado
   useEffect(() => {
     if (user && !usuario) {
-      const displayName = user.user_metadata?.name || user.email?.split('@')[0] || '';
-      setUsuario(displayName);
+      setUsuario(user.nome || user.email?.split('@')[0] || '');
     }
   }, [user, usuario]);
 
@@ -114,6 +113,15 @@ export default function CheckIn() {
   const handleConfirm = async () => {
     if (selectedEquipments.length === 0 || !action || !usuario.trim()) return;
 
+    if (!user?.empresa_id) {
+      toast({
+        title: "Erro",
+        description: "Usuário deve estar vinculado a uma empresa.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
@@ -147,7 +155,8 @@ export default function CheckIn() {
             equipamento_id: equipamento.id,
             tipo: isCheckout ? 'Retirada' : 'Devolução',
             por: usuario,
-            observacoes: observacoes || undefined
+            observacoes: observacoes || undefined,
+            empresa_id: user.empresa_id
           });
 
           successCount++;
@@ -180,8 +189,7 @@ export default function CheckIn() {
       setSearchCode("");
       
       // Manter o nome do usuário para próximas operações
-      const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || '';
-      setUsuario(displayName);
+      setUsuario(user?.nome || user?.email?.split('@')[0] || '');
 
     } catch (error) {
       console.error('Erro geral no processamento:', error);
